@@ -55,7 +55,7 @@ Follow these unless the user says otherwise:
   - `{{bbox}}` — the standard Overpass format (south,west,north,east)
   - Individual values: `{{s}}`, `{{n}}`, `{{e}}`, `{{w}}` (short) or
     `{{south}}`, `{{north}}`, `{{east}}`, `{{west}}` (long)
-  - Composite strings: `{{wsen}}` is equivalent to `{{w}}{{s}}{{e}}{{n}}`
+  - Composite strings: `{{wsen}}` is equivalent to `{{w}},{{s}},{{e}},{{n}}`
   For Overpass, use `[bbox:{{bbox}}];` as the first statement.
   For other providers (QLever, Postpass, GeoJSON APIs), use the individual or composite
   shortcuts to embed viewport coordinates in your query.
