@@ -74,7 +74,9 @@ WHERE tags->>'amenity' = 'cafe'
 
 ## Spatial Joins
 
-Use `ST_Contains` for queries involving containment (e.g., features within an admin boundary):
+Use `ST_Contains` or `ST_DWithin` for queries involving spatial relationships between features.
+
+**Example: trees within an admin boundary**
 
 ```sql
 SELECT point.tags->>'name' AS name, point.geom
@@ -86,6 +88,67 @@ WHERE point.tags->>'natural' = 'tree'
   AND admin.tags->>'boundary' = 'administrative'
   AND admin.tags->>'admin_level' = '4'
 ```
+
+## Query Optimization (Critical)
+
+**The Postpass database contains global OSM data.** Queries that scan large portions of the
+database without spatial filtering will be extremely slow or may time out. Always structure
+queries to filter data early.
+
+### Key principles
+
+1. **Filter every table by bbox.** When joining multiple tables, apply bbox filters to *all*
+   tables involved, not just the final output. Use CTEs or subqueries to pre-filter.
+
+2. **Expand bbox for proximity queries.** When using `ST_DWithin` or similar proximity functions,
+   expand the bbox on the secondary table to include features just outside the viewport that
+   might still match. Add a buffer slightly larger than your search radius.
+
+3. **Avoid global scans in joins.** A query like `SELECT ... FROM a JOIN b ON ST_DWithin(...)`
+   where only `a` is filtered will scan all of `b` globally — this is very expensive.
+
+### Bad example (global scan on churches)
+
+```sql
+-- DON'T DO THIS: signals filtered by bbox, but churches scanned globally
+SELECT s.geom
+FROM postpass_point s
+JOIN postpass_pointpolygon c
+  ON ST_DWithin(s.geom::geography, c.geom::geography, 300)
+WHERE s.tags->>'highway' = 'traffic_signals'
+  AND c.tags->>'amenity' = 'place_of_worship'
+  AND s.geom && ST_SetSRID(ST_MakeBox2D(...), 4326)
+```
+
+### Good example (both tables filtered)
+
+```sql
+-- DO THIS: both tables pre-filtered by bbox using CTEs
+WITH churches AS (
+  SELECT geom
+  FROM postpass_pointpolygon
+  WHERE tags->>'amenity' = 'place_of_worship'
+    AND geom && ST_SetSRID(ST_MakeBox2D(
+      ST_MakePoint({{w}} - 0.005, {{s}} - 0.005),
+      ST_MakePoint({{e}} + 0.005, {{n}} + 0.005)
+    ), 4326)
+),
+signals AS (
+  SELECT geom
+  FROM postpass_point
+  WHERE tags->>'highway' = 'traffic_signals'
+    AND geom && ST_SetSRID(ST_MakeBox2D(
+      ST_MakePoint({{w}}, {{s}}),
+      ST_MakePoint({{e}}, {{n}})
+    ), 4326)
+)
+SELECT DISTINCT s.geom
+FROM signals s
+JOIN churches c
+  ON ST_DWithin(s.geom::geography, c.geom::geography, 300)
+```
+
+Note the ~0.005° buffer (~500m) on the churches bbox to catch nearby churches outside the viewport.
 
 ## Line and Polygon Data
 
