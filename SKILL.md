@@ -74,6 +74,31 @@ Follow these unless the user says otherwise:
   - `out body;` + `>;` + `out skel qt;` for recursive descent (rarely needed in Ultra since
     `out geom` is simpler)
 
+## Interpreting OSM Tags
+
+OSM tag values often carry meaning beyond their everyday English definitions. The tagging
+scheme grew organically from British English conventions and community consensus, so a
+thoughtful approach is needed when translating user requests into queries.
+
+**`highway=*` is a great example.** In OSM, "highway" means any public right of way — not
+just major roads. The tag spans motor vehicle roads, footpaths, cycleways, and more:
+
+| User intent | Typical OSM tags |
+|-------------|------------------|
+| "Roads" (motor traffic) | `highway` ∈ {`motorway`, `trunk`, `primary`, `secondary`, `tertiary`, `unclassified`, `residential`, `service`, `living_street`} |
+| "Paths / trails" (foot) | `highway` ∈ {`footway`, `path`, `steps`, `pedestrian`} |
+| "Bike infrastructure" | `highway=cycleway` or roads with `cycleway=*` tags |
+| "Sidewalks" | `highway=footway` + `footway=sidewalk`, or `sidewalk=*` on roads |
+| "Tracks" (agricultural/forest) | `highway=track` (note: *not* railroad tracks!) |
+
+When a user asks for "roads," don't query all `highway=*` — that would include footways.
+
+**Many other tags are confusing, for example:**
+
+- `highway=unclassified`: a minor through-road (British term), *not* "unknown type"
+- `natural=water`: can be used for any water bodies, including man-made
+- `name:etymology=*` is confusing because `name:*=*` tags are usually for language codes, e.g. `name:fr=*`
+
 ## YAML Frontmatter Reference
 
 All keys are optional. Here are the ones you'll use most:
