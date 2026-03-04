@@ -155,6 +155,10 @@ Customize the click-popup using LiquidJS syntax:
 popupTemplate: "{{tags.name}} ({{type}}/{{id}})"
 ```
 
+**Colon-containing keys**: Tag keys with colons (e.g. `building:material`, `addr:street`,
+`roof:shape`) must use bracket notation — `{{tags["building:material"]}}`, not
+`{{tags.building:material}}` — or LiquidJS will throw a `TokenizationError`.
+
 Set to `false` to disable popups.
 
 ### `popupOnHover`
@@ -356,6 +360,12 @@ SPARQL-based querying against the QLever osm-planet dataset. Set `type: qlever`.
 **If the user asks for a QLever query, read `references/qlever.md` first**, then consult
 the example queries linked there.
 
+### PMTiles
+
+Ultra has built-in support for PMTiles via the `pmtiles://` protocol. Set `type: vector`
+(or `raster`) and use a `pmtiles://` URL as the query body.
+Please see `references/pmtiles.md` for more information and examples.
+
 ### Other Providers
 
 Ultra also supports: `geojson`, `kml`, `gpx`, `tcx`, `esri`, `raw`, `raster`, `vector`,
@@ -363,6 +373,14 @@ Ultra also supports: `geojson`, `kml`, `gpx`, `tcx`, `esri`, `raw`, `raster`, `v
 `taginfo`, `javascript`.
 
 For details on any of these, consult: https://overpass-ultra.us/docs/yaml/
+
+### Multiple Sources
+
+You can also add additional
+sources (PMTiles, raster tiles, etc.) via `style.sources`, allowing multiple tilesets
+in one map. Layers target these extra sources with an explicit `source` key.
+**If the user asks about adding multiple tile sources, or combining tilesets, read
+`references/multiple-sources.md`** for syntax and examples.
 
 ## Worked Examples
 
@@ -447,7 +465,8 @@ out;
   `<west><south><east><north>`. Use these for non-Overpass providers that need viewport coords.
 
 - **Quoting tag keys with special characters**: Keys containing colons or other special chars
-  need quotes in Overpass QL: `way["cycleway:right"=lane]`.
+  need quotes in Overpass QL: `way["cycleway:right"=lane]`. In `popupTemplate`, use bracket
+  notation: `{{tags["addr:street"]}}` (dot notation causes a `TokenizationError`).
 - **`out center` vs `out geom`**: Use `out center` when you want point representations
   (smaller response, works well with symbol/circle layers). Use `out geom` when you need
   the actual line/polygon shapes.
